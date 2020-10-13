@@ -1,8 +1,10 @@
 import express from 'express'
 import { validationResult } from 'express-validator/src/validation-result';
-import {UserModel, UserModelInterface} from "../models/UserModel";
+import {UserModel, UserModelDocumentInterface, UserModelInterface} from "../models/UserModel";
+import jwt from 'jsonwebtoken';
 import {generateMD5} from "../utils/generateHash";
 import {sendEmail} from "../utils/sendEmail";
+import {isValidObjectId} from "mongoose";
 
 class UserController {
    async index(_:any, res: express.Response): Promise<void> {
@@ -21,6 +23,33 @@ class UserController {
         })
      }
   }
+  async show(req:express.Request, res: express.Response): Promise<void> {
+     try {
+       const _id = req.params._id
+       if (!isValidObjectId(_id)) {
+         res.status(400).send()
+         return
+       }
+       const user = await UserModel.findById(_id).exec()
+       if (!user) {
+         res.status(404).json({
+           status: 'error',
+           message: 'Пользователь не найден'
+         })
+         return
+       }
+       res.status(200).json({
+         status: 'success',
+         data: user
+       })
+
+     } catch (error) {
+       res.status(500).json({
+         status: 'error',
+         message: error
+       })
+     }
+  }
   async create(req: express.Request, res: express.Response): Promise<void> {
      try {
        const errors = validationResult(req)
@@ -32,7 +61,7 @@ class UserController {
          email: req.body.email,
          fullname: req.body.fullname,
          username: req.body.username,
-         password: req.body.password,
+         password: generateMD5(req.body.password + process.env.SECRET_KEY),
          confirmHash: generateMD5(process.env.SECRET_KEY || Math.random().toString())
        }
        const user = await UserModel.create(data)
@@ -85,6 +114,41 @@ class UserController {
       })
     }
   }
+  async afterLogin (req: express.Request, res: express.Response): Promise<void> {
+    try {
+      const user = req.user ? (req.user as UserModelDocumentInterface).toJSON() : undefined
+      res.status(200).json({
+        status: 'success',
+        data: {
+          ...user,
+          token: jwt.sign({user: req.user}, process.env.SECRET_KEY || 'SECRET_KEY')
+        }
+      })
+
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error
+      })
+    }
+  }
+  async me(req: express.Request, res: express.Response): Promise<void> {
+    try {
+      const user = req.user ? (req.user as UserModelDocumentInterface).toJSON() : undefined
+      res.json({
+        status: 'success',
+        data: user
+      })
+    }
+    catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error
+      })
+    }
+  }
 }
+
+
 
 export const UserCtrl = new UserController()
