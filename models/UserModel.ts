@@ -1,4 +1,4 @@
-import {model, Schema, Document, SchemaOptions} from "mongoose";
+import {model, Schema, Document} from "mongoose";
 
 export interface UserModelInterface {
   _id?: string;

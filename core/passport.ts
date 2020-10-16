@@ -22,11 +22,15 @@ passport.use(new LocalStrategy(
 ))
 
 passport.use(new JwtStrategy({
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  jwtFromRequest: ExtractJwt.fromHeader('token'),
   secretOrKey: process.env.SECRET_KEY || 'SECRET_KEY'
-}, function (payload, done) {
+}, async function (payload, done) {
   try {
-    return done(null, payload.user)
+    const user = await UserModel.findOne({_id: payload.data._id}).exec()
+    if (user) {
+      return done(null, user)
+    }
+    done(null, false)
   } catch (error) {
     done(error, false)
   }
