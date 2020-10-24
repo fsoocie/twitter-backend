@@ -20,6 +20,8 @@ const TweetSchema = new Schema<TweetModelInterface>({
     type: String,
     maxlength: 280
   }
+}, {
+  timestamps: true
 })
 
 export const TweetModel = model<TweetModelDocumentInterface>('Tweet', TweetSchema)

@@ -5,9 +5,9 @@ import {isValidObjectId} from "mongoose";
 import {TweetModel} from "../models/TweetModel";
 
 class TweetsController {
-   async index(_:any, res: express.Response): Promise<void> {
+  async index(_:any, res: express.Response): Promise<void> {
      try {
-       const tweets = await TweetModel.find({}).exec()
+       const tweets = await TweetModel.find({}).populate('user').sort({createdAt: '-1'}).exec()
 
        res.status(200).json({
          status: 'success',
@@ -22,7 +22,6 @@ class TweetsController {
      }
   }
   async show(req:express.Request, res: express.Response): Promise<void> {
-
      try {
        const _id = req.params._id
        if (!isValidObjectId(_id)) {
@@ -32,7 +31,7 @@ class TweetsController {
          })
          return
        }
-       const tweet = await TweetModel.findById(_id).exec()
+       const tweet = await TweetModel.findById(_id).populate('user').exec()
        if (!tweet) {
          res.status(404).json({
            status: 'error',
@@ -55,7 +54,6 @@ class TweetsController {
   async create(req: express.Request, res: express.Response): Promise<void> {
      try {
        const user = req.user as UserModelInterface
-
        if (user._id) {
          const errors = validationResult(req)
          if (!errors.isEmpty()) {
@@ -67,7 +65,7 @@ class TweetsController {
            user: user._id
          }
          const tweet = await TweetModel.create(data)
-         res.status(201).json({status: 'success', data: tweet})
+         res.status(201).json({status: 'success', data: await tweet.populate('user').execPopulate()})
        }
 
      }
@@ -99,6 +97,31 @@ class TweetsController {
          message: error
        })
      }
+  }
+  async update (req: express.Request, res: express.Response) {
+    const user = req.user as UserModelDocumentInterface
+    try {
+      const tweetId = req.params._id
+      const tweet = await TweetModel.findById(tweetId)
+      if (tweet) {
+        console.log(user)
+        console.log(tweet.user._id)
+        if (String(user._id) === String(tweet.user._id)) {
+          tweet.text = req.body.text
+          await tweet.save()
+          res.send()
+          return
+        } else {
+          res.status(403).send()
+        }
+      }
+      else res.status(404).send()
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error
+      })
+    }
   }
 }
 

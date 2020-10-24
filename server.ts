@@ -19,8 +19,9 @@ app.get('/users/:_id', UserCtrl.show)
 
 app.get('/tweets', TweetsCtrl.index)
 app.get('/tweets/:_id', TweetsCtrl.show)
-app.post('/tweets', passport.authenticate('jwt'), createTweetValidations, TweetsCtrl.create)
 app.delete('/tweets/:_id', passport.authenticate('jwt'), TweetsCtrl.delete)
+app.post('/tweets', passport.authenticate('jwt'), createTweetValidations, TweetsCtrl.create)
+app.patch('/tweets/:_id', passport.authenticate('jwt'), createTweetValidations, TweetsCtrl.update)
 
 app.get('/auth/verify', UserCtrl.verify)
 app.post('/auth/register', registerValidations, UserCtrl.create)
